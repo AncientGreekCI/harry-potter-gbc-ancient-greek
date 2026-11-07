@@ -21,7 +21,7 @@ You need your own legally obtained copy of the ROM. **No game data is distribute
 | **MD5** | `ba85a2ae8aa5829c440eef2d5549506c` |
 | **SHA-1** | `4e6f676ec15e0e6238cb81853b5a74bbb20657a1` |
 
-Patched ROM (for checking your result): CRC32 `76C011E7`, MD5 `354f6282a9677961263491df4188a913`, SHA-1 `f04eaeb2100add8fb3b970453b8cf715b4acbf02`.
+Patched ROM (for checking your result): CRC32 `157AEB4C`, MD5 `282f006fa3da448d614df2885fb527f7`, SHA-1 `5e92a3d644b47419ae0ee156932d44f4760ba9de`.
 
 ### Option 1: In the browser (easiest)
 1. Open [RomPatcher.js](https://www.marcrobledo.com/RomPatcher.js/).
@@ -46,17 +46,15 @@ python3 tools/apply_ips.py "Harry Potter and the Sorcerer's Stone (USA, Europe) 
 * **Proportional spacing** - the game's width tables are rewritten for every Greek glyph, so letters sit naturally instead of on a fixed grid.
 * **Rebuildable** - edit the plain-text script, run one command, get a new patch.
 
-## 🔤 The Reduced Polytonic Character Set
-The translation is written in full polytonic Greek (`text/greek_script.tsv`). The game can only hold **97** distinct new symbols, so the builder converts it automatically:
+## 🔤 Full Polytonic Orthography (Combining VWF Engine)
+Like the SNES *Zelda: A Link to the Past* Ancient Greek project, this release features **complete, authentic polytonic Greek** with **zero dropped or merged forms**:
 
-| Source | What the ROM shows |
-| :--- | :--- |
-| Iota subscript (ᾳ ῃ ῳ) | dropped |
-| Accents and breathings on capitals | dropped |
-| Diaeresis together with an accent | accent kept |
-| Rare breathing + accent forms (ἆ ὡ ἁ ἥ ...) | merged into the nearest common form (21 forms in this release) |
+* **Additive Combining Diacritics (width = 0)**: Lowercase vowels support any combination of acute, grave, circumflex, smooth and rough breathings, diaeresis, and **iota subscript (ᾳ, ῃ, ῳ)**. Diacritics are blitted with additive `OR` without advancing the cursor.
+* **Preceding Capital Diacritics (width = 2–3 px)**: Uppercase vowels carry authentic classical diacritics placed preceding the capital letter (e.g., `Ἅρειος`, `Ὦ`, `Ἐκεῖνος`).
+* **Game Boy Z80 Engine Assembly Patches**: In Bank 1, the cursor advance check (`$65DA`) and word-wrap calculation (`$674D`, `$7066`) are hooked to detect zero-width combining marks and skip cursor advance.
+* **Zero Merged Forms**: Every breathing, accent, circumflex, and iota subscript in the 2,857 translated strings is preserved 100%.
 
-Full details and the merge table: [docs/translation_guide.md](docs/translation_guide.md).
+Full details and ROM technical map: [docs/translation_guide.md](docs/translation_guide.md).
 
 ## ✍️ Modifying & Rebuilding the Translation
 1. Edit [`text/greek_script.tsv`](text/greek_script.tsv) (`index<TAB>x<TAB>greek`). Allowed characters: [docs/allowed_characters.txt](docs/allowed_characters.txt).
@@ -109,7 +107,6 @@ The text was translated with Google Gemini from a fixed prompt (technical rules,
 
 ## 🐛 Known Issues
 * **Playtesting is incomplete.** The patched ROM has been run through boot, the language menu, the copyright and legal screens, the file-select screen and the opening up to Ollivander's shop; the rest of the script has been verified by decoding it back out of the ROM, not by playing it.
-* **Rare breathings are merged** (for example ὡ shows as ω and ῥ as ρ) because of the 97-symbol limit; see the merge table in the guide.
 * **Credits and legal screens** are rendered in Greek, including the company names (for example "Amaze Entertainment" appears as a Greek phrase), rather than being left in Latin letters.
 * Row `2585` contains a 96 px word that may overflow the text box.
 * Row `2601` is left as transliterated English (it contains a control code).

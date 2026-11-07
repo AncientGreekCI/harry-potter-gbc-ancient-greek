@@ -1,49 +1,301 @@
-"""compose(ch) -> (8 row bytes, pixel width) for one precomposed Greek character (NFC).
-Lowercase vowels and rho take any combination of: smooth/rough breathing, acute/grave/circumflex, diaeresis.
-Capitals take no marks (normalise() strips them first); iota subscript is not drawn."""
+"""Glyph composition and metrics for Greek Game Boy Color font.
+Supports full polytonic orthography:
+- Lowercase combining marks (accents, breathings, diaeresis, iota subscript) with width = 0.
+- Uppercase preceding diacritic marks with width = 2-3 px.
+- 24 uppercase and 25 lowercase base letters.
+"""
 import unicodedata
 from greek_art import UP, LO
+
 SMOOTH, ROUGH, ACUTE, GRAVE, CIRC, DIA, SUB = 0x313, 0x314, 0x301, 0x300, 0x342, 0x308, 0x345
-HOOK = {SMOOTH: ('##', '.#'), ROUGH: ('##', '#.')}
-ACC  = {ACUTE: ('.#', '#.'), GRAVE: ('#.', '.#'), CIRC: ('.#.', '#.#')}   # circumflex = small caret
-MARKABLE = set('αεηιουωρ')
-# horizontal shift of the accent: with a breathing / on its own (iota has its own, narrower values)
-SHIFT_HOOK  = {ACUTE: 3, GRAVE: 3, CIRC: 3}
-SHIFT_HOOK_CIRC = {SMOOTH: 3, ROUGH: 2}   # rough hook leaves a gap under the caret, so it can sit closer
-SHIFT_PLAIN = {ACUTE: 2, GRAVE: 2, CIRC: 1}
-SHIFT_IOTA  = {ACUTE: 0, GRAVE: 1, CIRC: 0}
+
 def _bits(rows):
     out = []
     for r in rows:
         r = r.ljust(8, '.'); assert len(r) <= 8, r
         out.append(int(''.join('1' if c == '#' else '0' for c in r), 2))
     return bytes(out)
-def _width(b): return max((x + 1 for r in b for x in range(8) if r >> (7 - x) & 1), default=0)
-def _stamp(rows, r, x, pat):
-    for dy, line in enumerate(pat):
-        for dx, c in enumerate(line):
-            if c == '#':
-                row = list(rows[r + dy].ljust(8, '.')); row[x + dx] = '#'; rows[r + dy] = ''.join(row)
+
+def _width(b):
+    return max((x + 1 for r in b for x in range(8) if r >> (7 - x) & 1), default=0)
+
+# Lowercase combining marks (Width = 0, blitted with OR onto vowel column)
+# Top marks in rows 0-1:
+COMB_MARKS = {
+    # Single marks
+    '\ue001': ('acute', [
+        '..#.....',
+        '.#......',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue002': ('grave', [
+        '.#......',
+        '..#.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue003': ('circumflex', [
+        '..#.....',
+        '.#.#....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue004': ('smooth', [
+        '##......',
+        '.#......',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue005': ('rough', [
+        '##......',
+        '#.......',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue006': ('smooth acute', [
+        '##.#....',
+        '.##.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue007': ('rough acute', [
+        '##.#....',
+        '###.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue008': ('smooth grave', [
+        '####....',
+        '.##.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue009': ('rough grave', [
+        '####....',
+        '###.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue00a': ('smooth circumflex', [
+        '##.#....',
+        '.#.#....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue00b': ('rough circumflex', [
+        '##.#....',
+        '##.#....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue00c': ('diaeresis', [
+        '.#.#....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue00d': ('diaeresis acute', [
+        '.#.#....',
+        '..#.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue00e': ('diaeresis grave', [
+        '.#.#....',
+        '.#......',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 0),
+    '\ue00f': ('iota subscript', [
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........',
+        '.##.....'
+    ], 0),
+
+    # Uppercase preceding marks (Width = 2 or 3)
+    '\ue010': ('cap smooth', [
+        '........',
+        '##......',
+        '.#......',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 2),
+    '\ue011': ('cap rough', [
+        '........',
+        '##......',
+        '#.......',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 2),
+    '\ue012': ('cap smooth acute', [
+        '........',
+        '##.#....',
+        '.##.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 3),
+    '\ue013': ('cap rough acute', [
+        '........',
+        '##.#....',
+        '###.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 3),
+    '\ue014': ('cap smooth circ', [
+        '........',
+        '##.#....',
+        '.#.#....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 3),
+    '\ue015': ('cap rough circ', [
+        '........',
+        '##.#....',
+        '##.#....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 3),
+    '\ue016': ('cap smooth grave', [
+        '........',
+        '####....',
+        '.##.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 3),
+    '\ue017': ('cap rough grave', [
+        '........',
+        '####....',
+        '###.....',
+        '........',
+        '........',
+        '........',
+        '........',
+        '........'
+    ], 3),
+}
+
+# Fast lookup for decomposing NFD diacritics
+LOWER_COMB_MAP = {
+    (ACUTE,): '\ue001',
+    (GRAVE,): '\ue002',
+    (CIRC,): '\ue003',
+    (SMOOTH,): '\ue004',
+    (ROUGH,): '\ue005',
+    (DIA,): '\ue00c',
+    (ACUTE, SMOOTH): '\ue006',
+    (ACUTE, ROUGH): '\ue007',
+    (GRAVE, SMOOTH): '\ue008',
+    (GRAVE, ROUGH): '\ue009',
+    (SMOOTH, CIRC): '\ue00a',
+    (ROUGH, CIRC): '\ue00b',
+    (ACUTE, DIA): '\ue00d',
+    (GRAVE, DIA): '\ue00e',
+}
+
+UPPER_PRECEDING_MAP = {
+    (SMOOTH,): '\ue010',
+    (ROUGH,): '\ue011',
+    (ACUTE, SMOOTH): '\ue012',
+    (ACUTE, ROUGH): '\ue013',
+    (SMOOTH, CIRC): '\ue014',
+    (ROUGH, CIRC): '\ue015',
+    (GRAVE, SMOOTH): '\ue016',
+    (GRAVE, ROUGH): '\ue017',
+}
+
 def compose(ch):
-    d = unicodedata.normalize('NFD', ch); base = d[0]; marks = {ord(m) for m in d[1:]} - {SUB}
+    """Return (8 row bytes, pixel width) for a character, combining mark, or punctuation."""
+    if ch in COMB_MARKS:
+        _, rows, w = COMB_MARKS[ch]
+        return _bits(rows), w
     if ch == '·':
         rows = [''] * 8; rows[4] = '#'; b = _bits(rows); return b, 1
+    d = unicodedata.normalize('NFD', ch); base = d[0]
     if base in UP:
-        b = _bits(list(UP[base])); return b, _width(b)      # marks on capitals are ignored
-    if base not in LO: raise KeyError(f'no glyph art for {ch!r}')
-    rows = list(LO[base])
-    if marks:
-        if base not in MARKABLE: raise KeyError(f'marks on {ch!r} are not supported')
-        hook = next((m for m in (SMOOTH, ROUGH) if m in marks), None)
-        acc = next((m for m in (ACUTE, GRAVE, CIRC) if m in marks), None)
-        dia = DIA in marks
-        if dia and acc: acc = None                    # no room for both: diaeresis wins
-        rows[0] = rows[1] = rows[2] = ''
-        w = max(len(r) for r in rows[3:])
-        if hook: _stamp(rows, 0, 0, HOOK[hook])
-        if acc:
-            shift = (SHIFT_HOOK_CIRC[hook] if acc == CIRC else SHIFT_HOOK[acc]) if hook else (SHIFT_IOTA if base == 'ι' else SHIFT_PLAIN)[acc]
-            _stamp(rows, 0, shift, ACC[acc])
-        if dia:
-            _stamp(rows, 0, 0, ('#',)); _stamp(rows, 0, max(w - 1, 2), ('#',))
-    b = _bits(rows); return b, _width(b)
+        b = _bits(list(UP[base])); return b, _width(b)
+    if base in LO:
+        b = _bits(list(LO[base])); return b, _width(b)
+    raise KeyError(f'no glyph art for {ch!r}')

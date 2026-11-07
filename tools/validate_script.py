@@ -2,13 +2,16 @@
 """Check a Greek script (index <TAB> x <TAB> greek) against the rules of the game font and engine.
 Usage: python3 tools/validate_script.py <clean_rom.gbc> text/greek_script.tsv
 Reports: forbidden characters, non-NFC text, special-token mismatches, length vs the English, words that cannot wrap.
-Exit status is 1 if a forbidden character is found."""
-import sys, re, unicodedata, collections
+Exit status is 1 if a forbidden character is found.
+"""
+import sys, re, unicodedata, collections, os
+
+sys.path.insert(0, os.path.dirname(__file__))
 import build_patch as bp
 from glyphs import compose
 from greek_art import UP, LO
 
-ALLOWED = set(".,!?:;'()-/&+@_`~·0123456789 ’")
+ALLOWED = set(".,!?:;'()-/&+@_`~·0123456789 ’\"")
 TOKENS = ('@1', '@2', '@3', '_', '~', '`')
 
 def load(path):
@@ -22,12 +25,24 @@ def main(rom_path, tsv):
     rom = open(rom_path, 'rb').read()
     english = [''.join(chr(x) if 32 <= x < 127 else f'<{x:02x}>' for x in s) for s in bp.read_slot(rom, 0x20)]
     rows = load(tsv)
-    widths = rom[bp.FONTS[0][1]:bp.FONTS[0][1] + 128]
+    widths = rom[bp.FONTS[0][1] : bp.FONTS[0][1] + 128]
+
     def px(word):
         total = 0
         for c in word:
-            total += (compose(c)[1] if (unicodedata.normalize('NFD', c)[0] in UP or unicodedata.normalize('NFD', c)[0] in LO or c == '·') else widths[ord(c) if ord(c) < 128 else 0x27]) + 1
+            d = unicodedata.normalize('NFD', c)
+            base = d[0]
+            marks = tuple(sorted(ord(m) for m in d[1:]))
+            if base.isupper() and marks:
+                cap_w = 3 + 1
+                base_w = compose(base)[1] + 1
+                total += cap_w + base_w
+            elif base in UP or base in LO or c == '·':
+                total += compose(base)[1] + 1
+            else:
+                total += (widths[ord(c) if ord(c) < 128 else 0x27]) + 1
         return total
+
     bad = collections.defaultdict(list); tok = []; nfc = []; wide = []; ratio = [0, 0]; empty_text = []
     for i, t in sorted(rows.items()):
         e = english[i]

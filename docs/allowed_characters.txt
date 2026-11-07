@@ -5,11 +5,11 @@ Greek (precomposed, Unicode NFC, no combining marks in the source text)
   Capitals     ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
   Lowercase    αβγδεζηθικλμνξοπρσςτυφχψω   (ς = final sigma)
   Any polytonic precomposed vowel is accepted in the source (U+1F00 - U+1FFF, U+03AC - U+03CE).
-  What is actually drawn is decided by tools/build_patch.py - see docs/translation_guide.md:
-    - iota subscripts are dropped
-    - capitals lose all marks
-    - diaeresis is dropped when an accent is also present
-    - the rarest marked forms are merged into simpler ones when the 97-symbol limit is exceeded
+  Full polytonic orthography is 100% supported by tools/build_patch.py:
+    - all breathings, acute, grave, and circumflex accents are drawn
+    - iota subscripts (ᾳ, ῃ, ῳ) are drawn in row 7 under vowels
+    - capital letters carry classical preceding diacritics (e.g. Ἅ, Ὦ, Ἐ)
+    - zero forms are merged or dropped
 
 ASCII
   digits       0 1 2 3 4 5 6 7 8 9

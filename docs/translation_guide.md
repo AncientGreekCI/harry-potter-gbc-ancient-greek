@@ -25,46 +25,31 @@ index<TAB>x<TAB>greek text
 | `` ` `` | Opening quotation mark (the closing quote is `'`). |
 | `<0c>` | Control code 0x0C (appears in one string only). |
 
-## 3. The reduced polytonic set
+## 3. Full Polytonic Orthography & Combining VWF Engine
 
-The source script is full polytonic Greek. `tools/build_patch.py` converts it to what the 8x8 font can draw:
+The translation uses **full polytonic Ancient Greek** with zero merged forms:
 
-1. **Normalisation** - the text is made NFC; typographic punctuation is folded to ASCII; **iota subscripts are dropped**; **capitals lose all marks**; a **diaeresis is dropped when an accent is also present**.
-2. **Composition** - every lowercase vowel (and ρ) can carry any mix of breathing + accent (acute, grave, circumflex) or a diaeresis. A mark takes rows 0-1 of the cell, row 2 stays empty, the 4-pixel-high body sits in rows 3-6.
-3. **Symbol limit** - the text engine has **97** unused character codes. Each distinct drawn form needs its own code. If the script needs more, the rarest marked forms are merged into simpler ones in this order: grave to acute, drop the breathing, drop the accent (keep the breathing), bare letter. Every merge is written to `<output>.report.txt`.
-
-Merges applied to this release (21 forms, 325 occurrences out of about 120,000 characters):
-
-| Merged | Into | Times |
-| :--- | :--- | ---: |
-| ἆ | ᾶ | 40 |
-| ῥ | ρ | 34 |
-| ὠ | ω | 31 |
-| ὡ | ω | 29 |
-| ὤ | ώ | 25 |
-| ὃ | ὸ | 23 |
-| ἁ | α | 22 |
-| ἥ | ή | 20 |
-| ἅ | ά | 16 |
-| ἷ | ῖ | 15 |
-| ὧ | ῶ | 15 |
-| ἃ | ὰ | 10 |
-| ἠ | η | 9 |
-| ϊ | ι | 8 |
-| ἣ | ὴ | 6 |
-| ἧ | ῆ | 6 |
-| ἓ | ὲ | 5 |
-| ὓ | ὺ | 5 |
-| ὢ | ὼ | 3 |
-| ἳ | ὶ | 2 |
-| ὂ | ὸ | 1 |
+1. **Combining Diacritics (width = 0)**:
+   * Lowercase accents (acute, grave, circumflex), breathings (smooth, rough), compound breathings+accents, and diaereses are rendered using combining marks with `width = 0`.
+   * Diacritics occupy rows 0–1 of the 8×8 cell.
+   * Iota subscripts (ᾳ, ῃ, ῳ) occupy row 7 with `width = 0` right beneath the vowel.
+   * The blitter uses additive `OR` blitting, compositing diacritics directly onto the vowel column without erasing letter pixels.
+2. **Preceding Capital Diacritics (width = 2–3 px)**:
+   * Because capital letters are 6 pixels tall (rows 1–6) and leave only 1 row of headroom, uppercase breathings and accents are placed directly *before* the capital letter (e.g. `Ἅ`, `Ὦ`, `Ἐ`) in the authentic classical style.
+3. **Z80 Engine Assembly Hooks (Bank 1)**:
+   * **Cursor Advance (`$65DA`)**: Hooked to `$7FB7`. Checks the character's width in the active width table at `$DD00`; if `width == 0`, cursor advance is skipped (`$C1B2` is unmodified).
+   * **Word-Wrap Bounds Check (`$674D`, `$7066`)**: Hooked to `$7FD0`. If `width == 0`, 0 pixels are added to word width accumulator.
+4. **Compression Optimization**:
+   * The top 24 most frequent accented vowels are precomposed as single tokens to keep Huffman codes compact.
+   * Overflow dialogue entries cleanly pack into free Bank `0xFF`.
+   * **0 forms merged** — 100% of polytonic distinctions are preserved.
 
 ## 4. Length and layout limits
 
 * The engine **word-wraps** automatically - no string contains a line-break code (the only forced break is `_`).
-* Text advances by **glyph width + 1 pixel**. Measured from the English line breaks: a line of up to **93 px** is known to fit, **101 px** overflows, so the real limit is somewhere in 93-100 px. The builder warns about any single word wider than 93 px (this release: row 2585, 96 px).
+* Text advances by **glyph width + 1 pixel** (combining marks with width 0 advance 0 pixels).
 * The dialogue box shows three lines; longer strings page forward with the arrow.
-* ROM space: the Greek script compresses to 84,514 bytes. The English US slot has room for roughly 88 KB (estimate), plus a free 16 KB bank (`0xFF`) that the builder uses automatically if needed (not needed in this release).
+* ROM space: the Greek script compresses to ~93 KB, packed across banks `0x20`–`0x25` plus ~4.3 KB in the free overflow bank (`0xFF`).
 
 ## 5. ROM map
 

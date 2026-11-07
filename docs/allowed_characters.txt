@@ -1,0 +1,32 @@
+Characters accepted in the Greek column of text/greek_script.tsv
+================================================================
+
+Greek (precomposed, Unicode NFC, no combining marks in the source text)
+  Capitals     ΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩ
+  Lowercase    αβγδεζηθικλμνξοπρσςτυφχψω   (ς = final sigma)
+  Any polytonic precomposed vowel is accepted in the source (U+1F00 - U+1FFF, U+03AC - U+03CE).
+  What is actually drawn is decided by tools/build_patch.py - see docs/translation_guide.md:
+    - iota subscripts are dropped
+    - capitals lose all marks
+    - diaeresis is dropped when an accent is also present
+    - the rarest marked forms are merged into simpler ones when the 97-symbol limit is exceeded
+
+ASCII
+  digits       0 1 2 3 4 5 6 7 8 9
+  punctuation  . , ! ? : ; ' ( ) - / & + @ _ ` ~
+  space
+
+Other
+  ·  (U+00B7 MIDDLE DOT) as ano teleia
+  ’  (U+2019) is accepted and drawn as the ASCII apostrophe
+
+Special tokens (copy exactly from the English source, same count and position)
+  @1 @2 @3   game variables filled in at run time
+  _          forced line break (not drawn)
+  ~          copyright sign
+  `          opening quotation mark (closing quote is ')
+
+Not accepted
+  Any Latin letter, curly or angle quotes (“ ” ‘ « »), en/em dashes, the Unicode ellipsis,
+  U+037E (Greek question mark - use ?), U+0387, non-breaking spaces, emoji, any other symbol.
+  Use ?  for questions, - for dashes and three periods (...) for ellipses.

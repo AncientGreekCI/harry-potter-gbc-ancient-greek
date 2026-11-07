@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ROM binaries (DO NOT DISTRIBUTE COPYRIGHTED ROMS)
+*.gbc
+*.gb
+*.bin
+*.rom
+*.sav
+*.srm
+
+# Build artifacts and logs
+build/
+*.log
+*.bak
+*.symbols.json
+*.report.txt
+
+# OS metadata
+Thumbs.db
+ehthumbs.db
+desktop.ini
+.DS_Store

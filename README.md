@@ -21,7 +21,7 @@ You need your own legally obtained copy of the ROM. **No game data is distribute
 | **MD5** | `ba85a2ae8aa5829c440eef2d5549506c` |
 | **SHA-1** | `4e6f676ec15e0e6238cb81853b5a74bbb20657a1` |
 
-Patched ROM (for checking your result): CRC32 `157AEB4C`, MD5 `282f006fa3da448d614df2885fb527f7`, SHA-1 `5e92a3d644b47419ae0ee156932d44f4760ba9de`.
+Patched ROM (for checking your result): CRC32 `DCA6FC36`, MD5 `08f0ed247c7471fae0263b355837aa49`, SHA-1 `f7eb8a7a5a72e3ee4f2ea736732383ff92f89aca`.
 
 ### Option 1: In the browser (easiest)
 1. Open [RomPatcher.js](https://www.marcrobledo.com/RomPatcher.js/).

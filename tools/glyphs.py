@@ -2,6 +2,7 @@
 Supports full polytonic orthography:
 - Lowercase combining marks (accents, breathings, diaeresis, iota subscript) with width = 0.
 - Uppercase preceding diacritic marks with width = 2-3 px.
+- High-Definition 5-pixel x-height (rows 2-6) for lowercase Greek letters.
 - 24 uppercase and 25 lowercase base letters.
 """
 import unicodedata
@@ -294,8 +295,26 @@ def compose(ch):
     if ch == '·':
         rows = [''] * 8; rows[4] = '#'; b = _bits(rows); return b, 1
     d = unicodedata.normalize('NFD', ch); base = d[0]
+    marks = tuple(sorted(ord(m) for m in d[1:]))
+
     if base in UP:
-        b = _bits(list(UP[base])); return b, _width(b)
+        b = _bits(list(UP[base]))
+        return b, _width(b)
+
     if base in LO:
-        b = _bits(list(LO[base])); return b, _width(b)
+        b_rows = list(LO[base])
+        if marks:
+            top_marks = tuple(m for m in marks if m != SUB)
+            has_sub = SUB in marks
+            m_sym = LOWER_COMB_MAP.get(top_marks)
+            if m_sym:
+                _, m_rows, _ = COMB_MARKS[m_sym]
+                b_rows[0] = m_rows[0]
+                b_rows[1] = m_rows[1]
+            if has_sub:
+                _, s_rows, _ = COMB_MARKS['\ue00f']
+                b_rows[7] = s_rows[7]
+        b = _bits(b_rows)
+        return b, _width(b)
+
     raise KeyError(f'no glyph art for {ch!r}')

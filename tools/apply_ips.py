@@ -3,7 +3,7 @@
 Usage: python3 tools/apply_ips.py <clean_rom.gbc> patches/hp1_greek_us.ips <output.gbc>"""
 import sys, zlib
 BASE_CRC32 = 0x4FD8B7C5      # Harry Potter and the Sorcerer's Stone (USA, Europe) (En,Fr,De,Es,It,Nl,Pt,Sv,No,Da,Fi).gbc
-PATCHED_CRC32 = 0x157AEB4C   # expected result for patches/hp1_greek_us.ips
+PATCHED_CRC32 = 0xDCA6FC36   # expected result for patches/hp1_greek_us.ips
 
 def apply(rom, ips):
     assert ips[:5] == b'PATCH', 'not an IPS file'

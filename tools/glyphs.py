@@ -164,16 +164,6 @@ COMB_MARKS = {
         '........',
         '........'
     ], 0),
-    '\ue00f': ('iota subscript', [
-        '........',
-        '........',
-        '........',
-        '........',
-        '........',
-        '........',
-        '........',
-        '.##.....'
-    ], 0),
 
     # Uppercase preceding marks (Width = 2 or 3)
     '\ue010': ('cap smooth', [
@@ -305,15 +295,11 @@ def compose(ch):
         b_rows = list(LO[base])
         if marks:
             top_marks = tuple(m for m in marks if m != SUB)
-            has_sub = SUB in marks
             m_sym = LOWER_COMB_MAP.get(top_marks)
             if m_sym:
                 _, m_rows, _ = COMB_MARKS[m_sym]
                 b_rows[0] = m_rows[0]
                 b_rows[1] = m_rows[1]
-            if has_sub:
-                _, s_rows, _ = COMB_MARKS['\ue00f']
-                b_rows[7] = s_rows[7]
         b = _bits(b_rows)
         return b, _width(b)
 

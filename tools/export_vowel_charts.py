@@ -15,6 +15,9 @@ FONT_MONO = ImageFont.truetype(r"C:\Windows\Fonts\consola.ttf", 14)
 
 def render_vowel_tile(ch):
     d = unicodedata.normalize('NFD', ch)
+    # Strip iota subscript
+    filtered = ''.join(c for c in d if ord(c) != SUB)
+    d = unicodedata.normalize('NFD', filtered)
     base = d[0]
     marks = tuple(sorted(ord(m) for m in d[1:]))
     tile = bytearray(8)
@@ -24,16 +27,11 @@ def render_vowel_tile(ch):
         tile = bytearray(b)
         w = bw
     elif base in LO:
-        top_marks = tuple(m for m in marks if m != SUB)
-        has_sub = SUB in marks
-        if top_marks:
-            m_sym = LOWER_COMB_MAP.get(top_marks)
+        if marks:
+            m_sym = LOWER_COMB_MAP.get(marks)
             if m_sym:
                 mb, _ = compose(m_sym)
                 for y in range(8): tile[y] |= mb[y]
-        if has_sub:
-            sb, _ = compose('\ue00f')
-            for y in range(8): tile[y] |= sb[y]
         bb, bw = compose(base)
         for y in range(8): tile[y] |= bb[y]
         w = bw
@@ -175,7 +173,7 @@ def create_grid_sheet(title, rows, out_filename, scale=9):
     print(f"Saved: {out_path}")
 
 if __name__ == "__main__":
-    # 1. Master Vowel Comparison (All 7 vowels across the 10 core forms)
+    # 1. Master Vowel Comparison (All 7 vowels across core forms)
     vowels_7 = ['α', 'ε', 'η', 'ι', 'ο', 'υ', 'ω']
     master_rows = [
         ("1. Plain Base", ['α', 'ε', 'η', 'ι', 'ο', 'υ', 'ω']),
@@ -187,8 +185,8 @@ if __name__ == "__main__":
         ("7. Smooth Acute", ['ἄ', 'ἔ', 'ἤ', 'ἴ', 'ὄ', 'ὔ', 'ὤ']),
         ("8. Rough Acute", ['ἅ', 'ἕ', 'ἥ', 'ἵ', 'ὅ', 'ὕ', 'ὥ']),
         ("9. Circumflex Breathing", ['ἆ', '—', 'ἦ', 'ἶ', '—', 'ὖ', 'ὦ']),
-        ("10. Iota Subscript (ᾳ,ῃ,ῳ)", ['ᾳ', '—', 'ῃ', '—', '—', '—', 'ῳ']),
-        ("11. Circ + Iota Subscript", ['ᾷ', '—', 'ῇ', '—', '—', '—', 'ῷ']),
+        ("10. Dative / Subjunctive (ᾳ,ῃ,ῳ)", ['ᾳ', '—', 'ῃ', '—', '—', '—', 'ῳ']),
+        ("11. Circ Dative (ᾷ,ῇ,ῷ)", ['ᾷ', '—', 'ῇ', '—', '—', '—', 'ῷ']),
     ]
     # Replace placeholder '—' with space or empty card
     cleaned_rows = []

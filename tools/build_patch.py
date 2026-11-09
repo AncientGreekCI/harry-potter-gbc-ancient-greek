@@ -195,18 +195,24 @@ def main(base, tsv, outrom, outips=None, mode='full', slot='us'):
     uk = read_slot(rom, SLOT_BANK)
     tr = load_tsv(tsv)
 
-    # Calculate frequencies of marked lowercase vowels (without iota subscript) to precompose the top ones
+    def strip_subscript(s):
+        nfd = unicodedata.normalize('NFD', s)
+        filtered = ''.join(c for c in nfd if ord(c) != SUB)
+        return unicodedata.normalize('NFC', filtered)
+
+    # Calculate frequencies of marked lowercase vowels (with iota subscript removed) to precompose the top ones
     char_freq = collections.Counter()
     for t in tr.values():
-        for c in unicodedata.normalize('NFC', t):
+        for c in strip_subscript(t):
             d = unicodedata.normalize('NFD', c)
-            if len(d) > 1 and d[0].islower() and SUB not in [ord(m) for m in d[1:]]:
+            if len(d) > 1 and d[0].islower():
                 char_freq[c] += 1
 
     # Keep top 24 most frequent accented vowels precomposed to optimize Huffman compression
     TOP_PRECOMPOSED = set(c for c, _ in char_freq.most_common(24))
 
     def decompose(s):
+        s = strip_subscript(s)
         for orig_char, repl in PUNCT.items():
             s = s.replace(orig_char, repl)
         out = []
@@ -225,12 +231,8 @@ def main(base, tsv, outrom, outips=None, mode='full', slot='us'):
                     out.append(cap_mark)
                 out.append(base)
             else:
-                top_m = tuple(m for m in marks if m != SUB)
-                if top_m:
-                    m = LOWER_COMB_MAP.get(top_m)
-                    if m: out.append(m)
-                if SUB in marks:
-                    out.append('\ue00f') # Combining iota subscript
+                m = LOWER_COMB_MAP.get(marks)
+                if m: out.append(m)
                 out.append(base)
         return ''.join(out)
 

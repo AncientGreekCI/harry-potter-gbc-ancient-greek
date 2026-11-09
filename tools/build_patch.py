@@ -16,7 +16,7 @@ Engine Architecture:
 
 Outputs: <out.gbc>, <out.ips>, <out.gbc>.symbols.json, and <out.gbc>.report.txt.
 """
-import sys, heapq, unicodedata, collections, json, os
+import sys, re, heapq, unicodedata, collections, json, os
 
 if sys.stdout and hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
@@ -237,9 +237,14 @@ def main(base, tsv, outrom, outips=None, mode='full', slot='us'):
     texts = []
     for k in range(N_STR):
         if k in tr:
-            texts.append(decompose(tr[k]))
+            t = decompose(tr[k])
         else:
-            texts.append(translit(uk[k]))
+            t = translit(uk[k])
+        # Safety check: if string ends with a variable token (@1, @2, @3), or if the original
+        # English string had trailing space, preserve it so the Bank 0 $30A2 macro expander terminates cleanly.
+        if re.search(r'@[123]$', t) or (uk[k].endswith(b' ') and not t.endswith(' ')):
+            t = t + ' '
+        texts.append(t)
 
     used_ascii = set()
     for t in texts:
